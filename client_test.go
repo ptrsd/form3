@@ -143,7 +143,7 @@ func assertNotNil(t *testing.T, notNils assertions) {
 func assertEquals(t *testing.T, equals assertions) {
 	for _, assertion := range equals {
 		if !reflect.DeepEqual(assertion.expected, assertion.actual) {
-			t.Errorf("%s: Expected: %v, Actual: %v", assertion.name, assertion.expected, assertion.actual)
+			t.Errorf("%s:\nExpected: %#v\n  Actual: %#v", assertion.name, assertion.expected, assertion.actual)
 		}
 	}
 }
