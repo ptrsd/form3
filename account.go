@@ -1,5 +1,17 @@
 package form3
 
+import (
+	"net/http"
+)
+
+const (
+	organisationAccountsBasePath = "/v1/organisation/accounts"
+)
+
+type AccountRoot struct {
+	Data Account `json:"data,omitempty"`
+}
+
 type Account struct {
 	ID             string            `json:"id,omitempty"`
 	OrganisationID string            `json:"organisation_id,omitempty"`
@@ -28,6 +40,29 @@ type AccountAttributes struct {
 	Title                       string   `json:"title,omitempty"`
 }
 
+type AccountRequestRoot struct {
+	Data AccountRequest `json:"data,omitempty"`
+}
+
+type AccountRequest struct {
+	ID             string            `json:"id"`
+	OrganisationID string            `json:"organisation_id"`
+	Type           string            `json:"type,omitempty"`
+	Attributes     AccountAttributes `json:"attributes"`
+}
+
 type AccountService struct {
 	client *Client
+}
+
+func (a *AccountService) Create(createReq AccountRequest) (Account, error) {
+	req, err := a.client.newRequest(http.MethodPost, organisationAccountsBasePath, AccountRequestRoot{createReq})
+	if err != nil {
+		return Account{}, err
+	}
+
+	result := AccountRoot{}
+	err = a.client.do(req, &result)
+
+	return result.Data, err
 }
