@@ -1,6 +1,7 @@
 package form3
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -60,6 +61,16 @@ func (a *AccountService) Create(createReq AccountRequest) (Account, error) {
 	if err != nil {
 		return Account{}, err
 	}
+
+	result := AccountRoot{}
+	err = a.client.do(req, &result)
+
+	return result.Data, err
+}
+
+func (a *AccountService) Fetch(id string) (Account, error) {
+	fetchAccountPath := fmt.Sprintf("/%s/%s", organisationAccountsBasePath, id)
+	req, err := a.client.newRequest(http.MethodGet, fetchAccountPath, nil)
 
 	result := AccountRoot{}
 	err = a.client.do(req, &result)

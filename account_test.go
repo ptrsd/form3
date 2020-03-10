@@ -9,19 +9,10 @@ import (
 
 func TestAccountService_whenCreateRequestIsValidThenReturnNewAccount(t *testing.T) {
 	client := NewDefaultClient(nil)
-	id, orgID, err := generateIDs()
+	accountRequest, err := generateMinimalAccount()
 
 	if err != nil {
-		t.Errorf("error while generating random UUID, %s", err.Error())
-	}
-
-	accountRequest := AccountRequest{
-		ID:             id,
-		OrganisationID: orgID,
-		Type:           "accounts",
-		Attributes: AccountAttributes{
-			Country: "GB",
-		},
+		t.Errorf("error while generating minimal account, %s", err.Error())
 	}
 
 	create, err := client.AccountService.Create(accountRequest)
@@ -46,19 +37,9 @@ func TestAccountService_whenCreateRequestIsValidThenReturnNewAccount(t *testing.
 
 func TestAccountService_whenCreatingDuplicatesThenError(t *testing.T) {
 	client := NewDefaultClient(nil)
-	id, orgID, err := generateIDs()
-
+	accountRequest, err := generateMinimalAccount()
 	if err != nil {
-		t.Errorf("error while generating random UUID, %s", err.Error())
-	}
-
-	accountRequest := AccountRequest{
-		ID:             id,
-		OrganisationID: orgID,
-		Type:           "accounts",
-		Attributes: AccountAttributes{
-			Country: "GB",
-		},
+		t.Errorf("error while generating minimal account, %s", err.Error())
 	}
 
 	_, err = client.AccountService.Create(accountRequest)
@@ -70,6 +51,100 @@ func TestAccountService_whenCreatingDuplicatesThenError(t *testing.T) {
 	if err == nil {
 		t.Errorf("create should return error when creating duplicates")
 	}
+
+	equals := assertions{
+		{actual: err.Error(), expected: "Account cannot be created as it violates a duplicate constraint", name: "CreateAccount.DuplicateError"},
+	}
+	assertEquals(t, equals)
+}
+
+func TestAccountService_whenFetchingExistingAccountThenSuccess(t *testing.T) {
+	client := NewDefaultClient(nil)
+	accountRequest, err := generateMinimalAccount()
+	if err != nil {
+		t.Errorf("error while generating minimal account, %s", err.Error())
+	}
+
+	newAccount, err := client.AccountService.Create(accountRequest)
+	if err != nil {
+		t.Errorf("create account returned with error %v", err.Error())
+	}
+
+	account, err := client.AccountService.Fetch(accountRequest.ID)
+	if err != nil {
+		t.Errorf("fetch account returned with error %v", err.Error())
+	}
+
+	equals := assertions{
+		{actual: account.Attributes, expected: accountRequest.Attributes, name: "FetchAccount.AccountAttributes"},
+		{actual: account.ID, expected: accountRequest.ID, name: "FetchAccount.AccountID"},
+		{actual: account.OrganisationID, expected: accountRequest.OrganisationID, name: "FetchAccount.OrganisationID"},
+		{actual: account.CreatedOn, expected: newAccount.CreatedOn, name: "FetchAccount.CreatedOn"},
+		{actual: account.ModifiedOn, expected: newAccount.ModifiedOn, name: "FetchAccount.ModifiedOn"},
+	}
+
+	assertEquals(t, equals)
+}
+
+func TestAccountService_whenFetchingNotExistingAccountThenFail(t *testing.T) {
+	client := NewDefaultClient(nil)
+	accountRequest, err := generateMinimalAccount()
+	if err != nil {
+		t.Errorf("error while generating minimal account, %s", err.Error())
+	}
+
+	_, err = client.AccountService.Create(accountRequest)
+	if err != nil {
+		t.Errorf("create account returned with error %v", err.Error())
+	}
+
+	uuid, err := generateRandomUUID()
+	if err != nil {
+		t.Errorf("error while generating random uuid, %s", err.Error())
+	}
+
+	_, err = client.AccountService.Fetch(uuid)
+	if err != nil {
+		t.Errorf("fetch account returned with error %v", err.Error())
+	}
+
+	equals := assertions{
+		{
+			actual:   err.Error(),
+			expected: fmt.Sprintf("record %s does not exist", uuid),
+			name:     "FetchAccount.NotExistingAccountErrorMessage",
+		},
+	}
+	assertEquals(t, equals)
+}
+
+func generateMinimalAccount() (AccountRequest, error) {
+	return generateAccountWithAttributes(AccountAttributes{Country: "GB"})
+}
+
+func generateAccountWithAttributes(attrs AccountAttributes) (AccountRequest, error) {
+	accountRequest, err := generateAccountRequest()
+	if err != nil {
+		return AccountRequest{}, err
+	}
+
+	accountRequest.Attributes = attrs
+	return accountRequest, nil
+}
+
+func generateAccountRequest() (AccountRequest, error) {
+	id, orgID, err := generateIDs()
+	if err != nil {
+		return AccountRequest{}, err
+	}
+
+	accountRequest := AccountRequest{
+		ID:             id,
+		OrganisationID: orgID,
+		Type:           "accounts",
+	}
+
+	return accountRequest, nil
 }
 
 func generateIDs() (id, orgID string, err error) {
