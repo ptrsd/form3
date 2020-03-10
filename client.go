@@ -3,6 +3,7 @@ package form3
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 )
@@ -17,8 +18,13 @@ const (
 type Client struct {
 	httpClient *http.Client
 
-	BaseURL   *url.URL
-	UserAgent string
+	BaseURL        *url.URL
+	UserAgent      string
+	AccountService *AccountService
+}
+
+type ErrorMessage struct {
+	ErrorMessage string `json:"error_message"`
 }
 
 func NewDefaultClient(httpClient *http.Client) (client *Client) {
@@ -28,6 +34,8 @@ func NewDefaultClient(httpClient *http.Client) (client *Client) {
 
 	baseURL, _ := url.Parse(defaultBaseURL)
 	client = &Client{httpClient: httpClient, BaseURL: baseURL, UserAgent: defaultUserAgent}
+
+	client.AccountService = &AccountService{client}
 
 	return client
 }
@@ -58,13 +66,35 @@ func (c *Client) newRequest(method, path string, body interface{}) (req *http.Re
 	return req, nil
 }
 
-func (c *Client) do(req *http.Request, respType interface{}) (*http.Response, error) {
+func (c *Client) do(req *http.Request, respType interface{}) error {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
 
+	if err := checkError(resp); err != nil {
+		return err
+	}
+
 	err = json.NewDecoder(resp.Body).Decode(respType)
-	return resp, err
+
+	return err
+}
+
+func checkError(resp *http.Response) error {
+	switch resp.StatusCode {
+	case 200, 201, 204:
+		return nil
+	case 400, 401, 403, 404, 405, 406, 409, 429, 500, 502, 503, 504:
+		errMsg := &ErrorMessage{}
+		json.NewDecoder(resp.Body).Decode(errMsg)
+		if errMsg.ErrorMessage == "" {
+			return fmt.Errorf(resp.Status)
+		}
+
+		return fmt.Errorf(errMsg.ErrorMessage)
+	default:
+		return fmt.Errorf("unknown status code %d", resp.StatusCode)
+	}
 }
