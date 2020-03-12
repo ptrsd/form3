@@ -26,13 +26,13 @@ func TestAccountService_whenCreateRequestIsValidThenReturnNewAccount(t *testing.
 		{actual: create.OrganisationID, expected: accountRequest.OrganisationID, name: "OrganisationID"},
 		{actual: create.Attributes, expected: accountRequest.Attributes, name: "Attributes"},
 	}
-	assertEquals(t, equals)
+	thenEquals(t, equals)
 
 	notEmpty := assertions{
 		{actual: create.ModifiedOn, name: "ModifiedOn"},
 		{actual: create.CreatedOn, name: "CreatedOn"},
 	}
-	assertNotEmpty(t, notEmpty)
+	thenNotEmpty(t, notEmpty)
 }
 
 func TestAccountService_whenCreatingDuplicatesThenError(t *testing.T) {
@@ -55,7 +55,7 @@ func TestAccountService_whenCreatingDuplicatesThenError(t *testing.T) {
 	equals := assertions{
 		{actual: err.Error(), expected: "Account cannot be created as it violates a duplicate constraint", name: "CreateAccount.DuplicateError"},
 	}
-	assertEquals(t, equals)
+	thenEquals(t, equals)
 }
 
 func TestAccountService_whenFetchingExistingAccountThenSuccess(t *testing.T) {
@@ -83,7 +83,7 @@ func TestAccountService_whenFetchingExistingAccountThenSuccess(t *testing.T) {
 		{actual: account.ModifiedOn, expected: newAccount.ModifiedOn, name: "FetchAccount.ModifiedOn"},
 	}
 
-	assertEquals(t, equals)
+	thenEquals(t, equals)
 }
 
 func TestAccountService_whenFetchingNotExistingAccountThenFail(t *testing.T) {
@@ -115,7 +115,7 @@ func TestAccountService_whenFetchingNotExistingAccountThenFail(t *testing.T) {
 			name:     "FetchAccount.NotExistingAccountErrorMessage",
 		},
 	}
-	assertEquals(t, equals)
+	thenEquals(t, equals)
 }
 
 func TestAccountService_Delete(t *testing.T) {
@@ -147,7 +147,88 @@ func TestAccountService_Delete(t *testing.T) {
 			name:     "DeleteAccount.NotExistingAccountErrorMessage",
 		},
 	}
-	assertEquals(t, equals)
+	thenEquals(t, equals)
+}
+
+func TestAccountService_List(t *testing.T) {
+	client := NewDefaultClient(nil)
+	clean(t, client)
+
+	t.Run("Given no accounts", func(t *testing.T) {
+		t.Run("When no accounts then list is empty", func(t *testing.T) {
+			list, hasNext := whenListingAccountsWith(t, client, ListOptions{PageSize: 5})
+			thenEquals(t, assertions{
+				{actual: len(list), expected: 0, name: "ListLength"},
+				{actual: hasNext, expected: false, name: "hasNext"},
+			})
+		})
+	})
+
+	t.Run("Given 101 accounts", func(t *testing.T) {
+		givenAccounts(t, client, 101)
+
+		t.Run("When using default pagination only 100 elements returned from 101 elements", func(t *testing.T) {
+			list, hasNext := whenListingAccountsWith(t, client, ListOptions{})
+			thenEquals(t, assertions{
+				{actual: len(list), expected: 100, name: "ListLength"},
+				{actual: hasNext, expected: true, name: "HasNext"},
+			})
+		})
+		t.Run("When using default page size but asking for second page only 1 element returned from 101 elements", func(t *testing.T) {
+			list, hasNext := whenListingAccountsWith(t, client, ListOptions{Page: 1})
+			thenEquals(t, assertions{
+				{actual: len(list), expected: 1, name: "ListLength"},
+				{actual: hasNext, expected: false, name: "HasNext"},
+			})
+		})
+		t.Run("When requesting first page with 5 elements only 5 elements returned from 101 elements", func(t *testing.T) {
+			list, hasNext := whenListingAccountsWith(t, client, ListOptions{PageSize: 5})
+			thenEquals(t, assertions{
+				{actual: len(list), expected: 5, name: "ListLength"},
+				{actual: hasNext, expected: true, name: "HasNext"},
+			})
+		})
+	})
+}
+
+func whenListingAccountsWith(t *testing.T, client *Client, opts ListOptions) ([]Account, bool) {
+	list, hasNext, err := client.AccountService.List(opts)
+	if err != nil {
+		t.Errorf("error while listing accounts, %s", err.Error())
+	}
+
+	return list, hasNext
+}
+func givenAccounts(t *testing.T, client *Client, numberOfAccounts int) {
+	for idx := 0; idx < numberOfAccounts; idx++ {
+		req, err := generateMinimalAccount()
+		if err != nil {
+			t.Errorf("error while generating minimal account, %s", err.Error())
+		}
+
+		_, err = client.AccountService.Create(req)
+		if err != nil {
+			t.Errorf("error while generating minimal account, %s", err.Error())
+		}
+	}
+}
+
+func clean(t *testing.T, client *Client) {
+	hasNext := true
+
+	for hasNext {
+		var list = make([]Account, 100)
+		var err error
+
+		list, hasNext, err = client.AccountService.List(ListOptions{})
+		if err != nil {
+			t.Errorf("error while listing accounts, %s", err.Error())
+		}
+
+		for _, acc := range list {
+			client.AccountService.Delete(acc.ID, acc.Version)
+		}
+	}
 }
 
 func generateMinimalAccount() (AccountRequest, error) {

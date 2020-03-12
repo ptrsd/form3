@@ -47,6 +47,17 @@ type AccountRequestRoot struct {
 	Data AccountRequest `json:"data,omitempty"`
 }
 
+type AccountListRoot struct {
+	Data  []Account `json:"data,omitempty"`
+	Links struct {
+		Next     string `json:"next,omitempty"`
+		Previous string `json:"prev,omitempty"`
+		First    string `json:"first,omitempty"`
+		Last     string `json:"last,omitempty"`
+		Self     string `json:"self,omitempty"`
+	} `json:"links,omitempty"`
+}
+
 type AccountRequest struct {
 	ID             string            `json:"id"`
 	OrganisationID string            `json:"organisation_id"`
@@ -91,4 +102,35 @@ func (a *AccountService) Delete(id string, version int) error {
 	err = a.client.do(req, nil)
 
 	return err
+}
+
+func (a *AccountService) List(options ListOptions) ([]Account, bool, error) {
+	listQuery := a.getPagingQueryParams(options)
+
+	req, err := a.client.newRequest(http.MethodGet, &url.URL{Path: organisationAccountsBasePath, RawQuery: listQuery.Encode()}, nil)
+
+	result := AccountListRoot{}
+	err = a.client.do(req, &result)
+
+	return result.Data, result.Links.Next != "", err
+}
+
+func (a *AccountService) getPagingQueryParams(options ListOptions) url.Values {
+	var (
+		pageNumber string
+		pageSize   string
+	)
+
+	if options.PageSize == 0 {
+		pageSize = defaultPageSize
+	} else {
+		pageSize = strconv.Itoa(options.PageSize)
+	}
+
+	pageNumber = strconv.Itoa(options.Page)
+	listQuery := url.Values{
+		"page[number]": {pageNumber},
+		"page[size]":   {pageSize},
+	}
+	return listQuery
 }
