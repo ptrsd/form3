@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 const (
@@ -77,4 +78,17 @@ func (a *AccountService) Fetch(id string) (Account, error) {
 	err = a.client.do(req, &result)
 
 	return result.Data, err
+}
+
+func (a *AccountService) Delete(id string, version int) error {
+	deleteAccountPath := fmt.Sprintf("%s/%s", organisationAccountsBasePath, id)
+
+	deleteQuery := url.Values{
+		"version": {strconv.Itoa(version)},
+	}
+
+	req, err := a.client.newRequest(http.MethodDelete, &url.URL{Path: deleteAccountPath, RawQuery: deleteQuery.Encode()}, nil)
+	err = a.client.do(req, nil)
+
+	return err
 }

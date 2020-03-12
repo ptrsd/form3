@@ -104,8 +104,8 @@ func TestAccountService_whenFetchingNotExistingAccountThenFail(t *testing.T) {
 	}
 
 	_, err = client.AccountService.Fetch(uuid)
-	if err != nil {
-		t.Errorf("fetch account returned with error %v", err.Error())
+	if err == nil {
+		t.Errorf("fetch account should returned with error")
 	}
 
 	equals := assertions{
@@ -113,6 +113,38 @@ func TestAccountService_whenFetchingNotExistingAccountThenFail(t *testing.T) {
 			actual:   err.Error(),
 			expected: fmt.Sprintf("record %s does not exist", uuid),
 			name:     "FetchAccount.NotExistingAccountErrorMessage",
+		},
+	}
+	assertEquals(t, equals)
+}
+
+func TestAccountService_Delete(t *testing.T) {
+	client := NewDefaultClient(nil)
+	accountRequest, err := generateMinimalAccount()
+	if err != nil {
+		t.Errorf("error while generating minimal account, %s", err.Error())
+	}
+
+	_, err = client.AccountService.Create(accountRequest)
+	if err != nil {
+		t.Errorf("create account returned with error %v", err.Error())
+	}
+
+	err = client.AccountService.Delete(accountRequest.ID, 0)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	ac, err := client.AccountService.Fetch(accountRequest.ID)
+	if err == nil {
+		t.Errorf("%#v", ac)
+	}
+
+	equals := assertions{
+		{
+			actual:   err.Error(),
+			expected: fmt.Sprintf("record %s does not exist", accountRequest.ID),
+			name:     "DeleteAccount.NotExistingAccountErrorMessage",
 		},
 	}
 	assertEquals(t, equals)
