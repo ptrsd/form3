@@ -35,12 +35,16 @@ type ListOptions struct {
 }
 
 func NewDefaultClient(httpClient *http.Client) (client *Client) {
+	return NewClient(httpClient, defaultBaseURL)
+}
+
+func NewClient(httpClient *http.Client, baseURL string) (client *Client) {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
 
-	baseURL, _ := url.Parse(defaultBaseURL)
-	client = &Client{httpClient: httpClient, BaseURL: baseURL, UserAgent: defaultUserAgent}
+	userBaseURL, _ := url.Parse(baseURL)
+	client = &Client{httpClient: httpClient, BaseURL: userBaseURL, UserAgent: defaultUserAgent}
 
 	client.AccountService = &AccountService{client}
 

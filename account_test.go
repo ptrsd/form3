@@ -4,11 +4,12 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"os"
 	"testing"
 )
 
 func TestAccountService_whenCreateRequestIsValidThenReturnNewAccount(t *testing.T) {
-	client := NewDefaultClient(nil)
+	client := NewClient(nil, baseURL)
 	accountRequest, err := generateMinimalAccount()
 
 	if err != nil {
@@ -36,7 +37,7 @@ func TestAccountService_whenCreateRequestIsValidThenReturnNewAccount(t *testing.
 }
 
 func TestAccountService_whenCreatingDuplicatesThenError(t *testing.T) {
-	client := NewDefaultClient(nil)
+	client := NewClient(nil, baseURL)
 	accountRequest, err := generateMinimalAccount()
 	if err != nil {
 		t.Errorf("error while generating minimal account, %s", err.Error())
@@ -59,7 +60,7 @@ func TestAccountService_whenCreatingDuplicatesThenError(t *testing.T) {
 }
 
 func TestAccountService_whenFetchingExistingAccountThenSuccess(t *testing.T) {
-	client := NewDefaultClient(nil)
+	client := NewClient(nil, baseURL)
 	accountRequest, err := generateMinimalAccount()
 	if err != nil {
 		t.Errorf("error while generating minimal account, %s", err.Error())
@@ -87,7 +88,7 @@ func TestAccountService_whenFetchingExistingAccountThenSuccess(t *testing.T) {
 }
 
 func TestAccountService_whenFetchingNotExistingAccountThenFail(t *testing.T) {
-	client := NewDefaultClient(nil)
+	client := NewClient(nil, baseURL)
 	accountRequest, err := generateMinimalAccount()
 	if err != nil {
 		t.Errorf("error while generating minimal account, %s", err.Error())
@@ -119,7 +120,7 @@ func TestAccountService_whenFetchingNotExistingAccountThenFail(t *testing.T) {
 }
 
 func TestAccountService_Delete(t *testing.T) {
-	client := NewDefaultClient(nil)
+	client := NewClient(nil, baseURL)
 	accountRequest, err := generateMinimalAccount()
 	if err != nil {
 		t.Errorf("error while generating minimal account, %s", err.Error())
@@ -151,7 +152,7 @@ func TestAccountService_Delete(t *testing.T) {
 }
 
 func TestAccountService_List(t *testing.T) {
-	client := NewDefaultClient(nil)
+	client := NewClient(nil, baseURL)
 	clean(t, client)
 
 	t.Run("Given no accounts", func(t *testing.T) {
