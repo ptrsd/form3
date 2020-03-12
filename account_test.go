@@ -8,6 +8,14 @@ import (
 	"testing"
 )
 
+var baseURL string
+
+func TestMain(m *testing.M) {
+	baseURL = os.Getenv("APP_BASE_URL")
+	code := m.Run()
+	os.Exit(code)
+}
+
 func TestAccountService_whenCreateRequestIsValidThenReturnNewAccount(t *testing.T) {
 	client := NewClient(nil, baseURL)
 	accountRequest, err := generateMinimalAccount()
