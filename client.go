@@ -11,7 +11,7 @@ import (
 const (
 	version          = "v1"
 	defaultUserAgent = "form3-client/" + version
-	defaultBaseURL   = "http://localhost:8080/"
+	defaultBaseURL   = "http://localhost:8080"
 	contentType      = "application/vnd.api+json"
 )
 
@@ -40,8 +40,8 @@ func NewDefaultClient(httpClient *http.Client) (client *Client) {
 	return client
 }
 
-func (c *Client) newRequest(method, path string, body interface{}) (req *http.Request, err error) {
-	reqURL := c.BaseURL.ResolveReference(&url.URL{Path: path})
+func (c *Client) newRequest(method string, url *url.URL, body interface{}) (req *http.Request, err error) {
+	reqURL := c.BaseURL.ResolveReference(url)
 	buf := bytes.Buffer{}
 
 	if body != nil {
@@ -77,7 +77,9 @@ func (c *Client) do(req *http.Request, respType interface{}) error {
 		return err
 	}
 
-	err = json.NewDecoder(resp.Body).Decode(respType)
+	if respType != nil {
+		err = json.NewDecoder(resp.Body).Decode(respType)
+	}
 
 	return err
 }

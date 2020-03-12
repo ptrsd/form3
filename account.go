@@ -3,6 +3,7 @@ package form3
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 const (
@@ -57,7 +58,7 @@ type AccountService struct {
 }
 
 func (a *AccountService) Create(createReq AccountRequest) (Account, error) {
-	req, err := a.client.newRequest(http.MethodPost, organisationAccountsBasePath, AccountRequestRoot{createReq})
+	req, err := a.client.newRequest(http.MethodPost, &url.URL{Path: organisationAccountsBasePath}, AccountRequestRoot{createReq})
 	if err != nil {
 		return Account{}, err
 	}
@@ -69,8 +70,8 @@ func (a *AccountService) Create(createReq AccountRequest) (Account, error) {
 }
 
 func (a *AccountService) Fetch(id string) (Account, error) {
-	fetchAccountPath := fmt.Sprintf("/%s/%s", organisationAccountsBasePath, id)
-	req, err := a.client.newRequest(http.MethodGet, fetchAccountPath, nil)
+	fetchAccountPath := fmt.Sprintf("%s/%s", organisationAccountsBasePath, id)
+	req, err := a.client.newRequest(http.MethodGet, &url.URL{Path: fetchAccountPath}, nil)
 
 	result := AccountRoot{}
 	err = a.client.do(req, &result)

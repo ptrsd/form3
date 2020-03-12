@@ -36,7 +36,7 @@ func Test_NewDefaultClient(t *testing.T) {
 func Test_whenRequestWithoutBodyThenContentTypeIsNotSet(t *testing.T) {
 	client := testClient("")
 
-	request, err := client.newRequest(http.MethodGet, "/", nil)
+	request, err := client.newRequest(http.MethodGet, &url.URL{Path: "/"}, nil)
 	if err != nil {
 		t.Errorf("error while creating new request, %s", err.Error())
 	}
@@ -49,7 +49,7 @@ func Test_whenRequestWithoutBodyThenContentTypeIsNotSet(t *testing.T) {
 func Test_whenRequestWithBodyThenContentTypeIsSet(t *testing.T) {
 	client := testClient("")
 
-	request, err := client.newRequest(http.MethodPost, "/", "")
+	request, err := client.newRequest(http.MethodPost, &url.URL{Path: "/"}, "")
 	if err != nil {
 		t.Errorf("error while creating new request, %s", err.Error())
 	}
@@ -62,7 +62,7 @@ func Test_whenRequestWithBodyThenContentTypeIsSet(t *testing.T) {
 func Test_whenRequestWithInvalidBodyThenReturnError(t *testing.T) {
 	client := testClient("")
 
-	_, err := client.newRequest(http.MethodGet, "/", make(chan int))
+	_, err := client.newRequest(http.MethodGet, &url.URL{Path: "/"}, make(chan int))
 	assertNotNil(t, assertions{
 		{actual: err, name: "Client.InvalidBodyError"},
 	})
@@ -78,7 +78,7 @@ func Test_whenCallingExistingServiceThenReturnBody(t *testing.T) {
 
 	client := testClient(server.URL)
 
-	req, err := client.newRequest(http.MethodGet, "/", nil)
+	req, err := client.newRequest(http.MethodGet, &url.URL{Path: "/"}, nil)
 	if err != nil {
 		t.Errorf("error while creating new request, %s", err.Error())
 	}
@@ -100,7 +100,7 @@ func Test_whenCallingExistingServiceThenReturnBody(t *testing.T) {
 func Test_whenCallingNotExistingServiceThenReturnError(t *testing.T) {
 	client := testClient("http://not-existing-service")
 
-	req, err := client.newRequest(http.MethodGet, "/", nil)
+	req, err := client.newRequest(http.MethodGet, &url.URL{Path: "/"}, nil)
 	if err != nil {
 		t.Errorf("error while creating new request, %s", err.Error())
 	}
