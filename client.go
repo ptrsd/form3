@@ -13,6 +13,8 @@ const (
 	defaultUserAgent = "form3-client/" + version
 	defaultBaseURL   = "http://localhost:8080"
 	contentType      = "application/vnd.api+json"
+
+	defaultPageSize = "100"
 )
 
 type Client struct {
@@ -25,6 +27,11 @@ type Client struct {
 
 type ErrorMessage struct {
 	ErrorMessage string `json:"error_message"`
+}
+
+type ListOptions struct {
+	Page     int
+	PageSize int
 }
 
 func NewDefaultClient(httpClient *http.Client) (client *Client) {
