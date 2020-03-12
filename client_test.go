@@ -30,7 +30,7 @@ func Test_NewDefaultClient(t *testing.T) {
 		{actual: client.BaseURL.String(), expected: defaultBaseURL, name: "Client.BaseURL"},
 		{actual: client.UserAgent, expected: defaultUserAgent, name: "Client.UserAgent"},
 	}
-	assertEquals(t, equals)
+	thenEquals(t, equals)
 }
 
 func Test_whenRequestWithoutBodyThenContentTypeIsNotSet(t *testing.T) {
@@ -41,7 +41,7 @@ func Test_whenRequestWithoutBodyThenContentTypeIsNotSet(t *testing.T) {
 		t.Errorf("error while creating new request, %s", err.Error())
 	}
 
-	assertEquals(t, assertions{
+	thenEquals(t, assertions{
 		{actual: request.Header.Get("Content-Type"), expected: "", name: "Client.ContentType"},
 	})
 }
@@ -54,7 +54,7 @@ func Test_whenRequestWithBodyThenContentTypeIsSet(t *testing.T) {
 		t.Errorf("error while creating new request, %s", err.Error())
 	}
 
-	assertEquals(t, assertions{
+	thenEquals(t, assertions{
 		{actual: request.Header.Get("Content-Type"), expected: contentType, name: "Client.ContentType"},
 	})
 }
@@ -67,7 +67,7 @@ func Test_whenRequestWithInvalidBodyThenReturnError(t *testing.T) {
 		{actual: err, name: "Client.InvalidBodyError"},
 	})
 
-	assertEquals(t, assertions{
+	thenEquals(t, assertions{
 		{actual: err.Error(), expected: "json: unsupported type: chan int", name: "Client.InvalidBodyErrorMessage"},
 	})
 }
@@ -92,7 +92,7 @@ func Test_whenCallingExistingServiceThenReturnBody(t *testing.T) {
 		t.Errorf("error while calling service, %s", err.Error())
 	}
 
-	assertEquals(t, assertions{
+	thenEquals(t, assertions{
 		{actual: resBody.Status, expected: "success", name: "Client.ResponseBody"},
 	})
 }
@@ -140,7 +140,7 @@ func assertNotNil(t *testing.T, notNils assertions) {
 	}
 }
 
-func assertEquals(t *testing.T, equals assertions) {
+func thenEquals(t *testing.T, equals assertions) {
 	for _, assertion := range equals {
 		if !reflect.DeepEqual(assertion.expected, assertion.actual) {
 			t.Errorf("%s:\nExpected: %#v\n  Actual: %#v", assertion.name, assertion.expected, assertion.actual)
@@ -148,7 +148,7 @@ func assertEquals(t *testing.T, equals assertions) {
 	}
 }
 
-func assertNotEmpty(t *testing.T, notEmpty []assertion) {
+func thenNotEmpty(t *testing.T, notEmpty []assertion) {
 	for _, assertion := range notEmpty {
 		if assertion.actual == reflect.Zero(reflect.TypeOf(assertion.actual)).Interface() {
 			t.Errorf("%s: Expected not to be empty", assertion.name)
