@@ -217,7 +217,7 @@ func clean(t *testing.T, client *Client) {
 	hasNext := true
 
 	for hasNext {
-		var list = make([]Account, 100)
+		var list []Account
 		var err error
 
 		list, hasNext, err = client.AccountService.List(ListOptions{})
@@ -226,7 +226,9 @@ func clean(t *testing.T, client *Client) {
 		}
 
 		for _, acc := range list {
-			client.AccountService.Delete(acc.ID, acc.Version)
+			if err := client.AccountService.Delete(acc.ID, acc.Version); err != nil {
+				t.Errorf("error while deleting account, %s", err.Error())
+			}
 		}
 	}
 }

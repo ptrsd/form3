@@ -84,6 +84,9 @@ func (a *AccountService) Create(createReq AccountRequest) (Account, error) {
 func (a *AccountService) Fetch(id string) (Account, error) {
 	fetchAccountPath := fmt.Sprintf("%s/%s", organisationAccountsBasePath, id)
 	req, err := a.client.newRequest(http.MethodGet, &url.URL{Path: fetchAccountPath}, nil)
+	if err != nil {
+		return Account{}, err
+	}
 
 	result := AccountRoot{}
 	err = a.client.do(req, &result)
@@ -99,6 +102,10 @@ func (a *AccountService) Delete(id string, version int) error {
 	}
 
 	req, err := a.client.newRequest(http.MethodDelete, &url.URL{Path: deleteAccountPath, RawQuery: deleteQuery.Encode()}, nil)
+	if err != nil {
+		return err
+	}
+
 	err = a.client.do(req, nil)
 
 	return err
@@ -108,6 +115,9 @@ func (a *AccountService) List(options ListOptions) ([]Account, bool, error) {
 	listQuery := a.getPagingQueryParams(options)
 
 	req, err := a.client.newRequest(http.MethodGet, &url.URL{Path: organisationAccountsBasePath, RawQuery: listQuery.Encode()}, nil)
+	if err != nil {
+		return nil, false, err
+	}
 
 	result := AccountListRoot{}
 	err = a.client.do(req, &result)

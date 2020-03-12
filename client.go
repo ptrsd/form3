@@ -97,11 +97,14 @@ func checkError(resp *http.Response) error {
 		return nil
 	case 400, 401, 403, 404, 405, 406, 409, 429, 500, 502, 503, 504:
 		errMsg := &ErrorMessage{}
-		json.NewDecoder(resp.Body).Decode(errMsg)
+
+		if err := json.NewDecoder(resp.Body).Decode(errMsg); err != nil {
+			return err
+		}
+
 		if errMsg.ErrorMessage == "" {
 			return fmt.Errorf(resp.Status)
 		}
-
 		return fmt.Errorf(errMsg.ErrorMessage)
 	default:
 		return fmt.Errorf("unknown status code %d", resp.StatusCode)
