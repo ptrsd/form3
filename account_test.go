@@ -12,151 +12,162 @@ var baseURL string
 
 func TestMain(m *testing.M) {
 	baseURL = os.Getenv("APP_BASE_URL")
+	if baseURL == "" {
+		baseURL = defaultBaseURL
+	}
+
 	code := m.Run()
 	os.Exit(code)
 }
 
-func TestAccountService_whenCreateRequestIsValidThenReturnNewAccount(t *testing.T) {
+func TestAccountService_Create(t *testing.T) {
 	client := NewClient(nil, baseURL)
-	accountRequest, err := generateMinimalAccount()
+	t.Run("When creating accounts with valid data then return new account", func(t *testing.T) {
+		accountRequest, err := generateAccountWithAttributes(AccountAttributes{Country:"GB"})
+		if err != nil {
+			t.Errorf("error while generating minimal account, %s", err.Error())
+			t.FailNow()
+		}
 
-	if err != nil {
-		t.Errorf("error while generating minimal account, %s", err.Error())
-	}
+		create, err := client.AccountService.Create(accountRequest)
+		if err != nil {
+			t.Errorf("create account returned with error %v", err.Error())
+			t.FailNow()
+		}
 
-	create, err := client.AccountService.Create(accountRequest)
-	if err != nil {
-		t.Errorf("create account returned with error %v", err.Error())
-	}
+		equals := assertions{
+			{actual: create.Type, expected: accountRequest.Type, name: "Type"},
+			{actual: create.ID, expected: accountRequest.ID, name: "ID"},
+			{actual: create.OrganisationID, expected: accountRequest.OrganisationID, name: "OrganisationID"},
+			{actual: create.Attributes, expected: accountRequest.Attributes, name: "Attributes"},
+		}
+		thenEquals(t, equals)
 
-	equals := assertions{
-		{actual: create.Type, expected: accountRequest.Type, name: "Type"},
-		{actual: create.ID, expected: accountRequest.ID, name: "ID"},
-		{actual: create.OrganisationID, expected: accountRequest.OrganisationID, name: "OrganisationID"},
-		{actual: create.Attributes, expected: accountRequest.Attributes, name: "Attributes"},
-	}
-	thenEquals(t, equals)
+		notEmpty := assertions{
+			{actual: create.ModifiedOn, name: "ModifiedOn"},
+			{actual: create.CreatedOn, name: "CreatedOn"},
+		}
+		thenNotEmpty(t, notEmpty)
+	})
 
-	notEmpty := assertions{
-		{actual: create.ModifiedOn, name: "ModifiedOn"},
-		{actual: create.CreatedOn, name: "CreatedOn"},
-	}
-	thenNotEmpty(t, notEmpty)
+	t.Run("When creating duplicates then error", func(t *testing.T) {
+		accountRequest, err := generateAccountWithAttributes(AccountAttributes{Country:"GB"})
+		if err != nil {
+			t.Errorf("error while generating minimal account, %s", err.Error())
+			t.FailNow()
+		}
+
+		_, err = client.AccountService.Create(accountRequest)
+		if err != nil {
+			t.Errorf("create account returned with error %v", err.Error())
+			t.FailNow()
+		}
+
+		_, err = client.AccountService.Create(accountRequest)
+		if err == nil {
+			t.Errorf("create should return error when creating duplicates")
+			t.FailNow()
+		}
+
+		equals := assertions{
+			{actual: err.Error(), expected: "Account cannot be created as it violates a duplicate constraint", name: "DuplicateError"},
+		}
+		thenEquals(t, equals)
+	})
 }
 
-func TestAccountService_whenCreatingDuplicatesThenError(t *testing.T) {
+func TestAccountService_Fetch(t *testing.T) {
 	client := NewClient(nil, baseURL)
-	accountRequest, err := generateMinimalAccount()
-	if err != nil {
-		t.Errorf("error while generating minimal account, %s", err.Error())
-	}
 
-	_, err = client.AccountService.Create(accountRequest)
-	if err != nil {
-		t.Errorf("create account returned with error %v", err.Error())
-	}
+	t.Run("When fetching existing account then return requested account", func(t *testing.T) {
+		accountRequest, err := generateAccountWithAttributes(AccountAttributes{Country:"GB"})
+		if err != nil {
+			t.Errorf("error while generating minimal account, %s", err.Error())
+			t.FailNow()
+		}
 
-	_, err = client.AccountService.Create(accountRequest)
-	if err == nil {
-		t.Errorf("create should return error when creating duplicates")
-	}
+		newAccount, err := client.AccountService.Create(accountRequest)
+		if err != nil {
+			t.Errorf("create account returned with error %v", err.Error())
+			t.FailNow()
+		}
 
-	equals := assertions{
-		{actual: err.Error(), expected: "Account cannot be created as it violates a duplicate constraint", name: "CreateAccount.DuplicateError"},
-	}
-	thenEquals(t, equals)
-}
+		account, err := client.AccountService.Fetch(accountRequest.ID)
+		if err != nil {
+			t.Errorf("fetch account returned with error %v", err.Error())
+			t.FailNow()
+		}
 
-func TestAccountService_whenFetchingExistingAccountThenSuccess(t *testing.T) {
-	client := NewClient(nil, baseURL)
-	accountRequest, err := generateMinimalAccount()
-	if err != nil {
-		t.Errorf("error while generating minimal account, %s", err.Error())
-	}
+		equals := assertions{
+			{actual: account.Attributes, expected: accountRequest.Attributes, name: "FetchAccount.AccountAttributes"},
+			{actual: account.ID, expected: accountRequest.ID, name: "FetchAccount.AccountID"},
+			{actual: account.OrganisationID, expected: accountRequest.OrganisationID, name: "FetchAccount.OrganisationID"},
+			{actual: account.CreatedOn, expected: newAccount.CreatedOn, name: "FetchAccount.CreatedOn"},
+			{actual: account.ModifiedOn, expected: newAccount.ModifiedOn, name: "FetchAccount.ModifiedOn"},
+		}
+		thenEquals(t, equals)
+	})
 
-	newAccount, err := client.AccountService.Create(accountRequest)
-	if err != nil {
-		t.Errorf("create account returned with error %v", err.Error())
-	}
+	t.Run("When fetching not existing account then fail", func(t *testing.T) {
+		uuid, err := generateRandomUUID()
+		if err != nil {
+			t.Errorf("error while generating random uuid, %s", err.Error())
+			t.FailNow()
+		}
 
-	account, err := client.AccountService.Fetch(accountRequest.ID)
-	if err != nil {
-		t.Errorf("fetch account returned with error %v", err.Error())
-	}
+		_, err = client.AccountService.Fetch(uuid)
+		if err == nil {
+			t.Errorf("fetch account should returned with error")
+			t.FailNow()
+		}
 
-	equals := assertions{
-		{actual: account.Attributes, expected: accountRequest.Attributes, name: "FetchAccount.AccountAttributes"},
-		{actual: account.ID, expected: accountRequest.ID, name: "FetchAccount.AccountID"},
-		{actual: account.OrganisationID, expected: accountRequest.OrganisationID, name: "FetchAccount.OrganisationID"},
-		{actual: account.CreatedOn, expected: newAccount.CreatedOn, name: "FetchAccount.CreatedOn"},
-		{actual: account.ModifiedOn, expected: newAccount.ModifiedOn, name: "FetchAccount.ModifiedOn"},
-	}
-
-	thenEquals(t, equals)
-}
-
-func TestAccountService_whenFetchingNotExistingAccountThenFail(t *testing.T) {
-	client := NewClient(nil, baseURL)
-	accountRequest, err := generateMinimalAccount()
-	if err != nil {
-		t.Errorf("error while generating minimal account, %s", err.Error())
-	}
-
-	_, err = client.AccountService.Create(accountRequest)
-	if err != nil {
-		t.Errorf("create account returned with error %v", err.Error())
-	}
-
-	uuid, err := generateRandomUUID()
-	if err != nil {
-		t.Errorf("error while generating random uuid, %s", err.Error())
-	}
-
-	_, err = client.AccountService.Fetch(uuid)
-	if err == nil {
-		t.Errorf("fetch account should returned with error")
-	}
-
-	equals := assertions{
-		{
-			actual:   err.Error(),
-			expected: fmt.Sprintf("record %s does not exist", uuid),
-			name:     "FetchAccount.NotExistingAccountErrorMessage",
-		},
-	}
-	thenEquals(t, equals)
+		equals := assertions{
+			{
+				actual:   err.Error(),
+				expected: fmt.Sprintf("record %s does not exist", uuid),
+				name:     "NotExistingAccountErrorMessage",
+			},
+		}
+		thenEquals(t, equals)
+	})
 }
 
 func TestAccountService_Delete(t *testing.T) {
 	client := NewClient(nil, baseURL)
-	accountRequest, err := generateMinimalAccount()
-	if err != nil {
-		t.Errorf("error while generating minimal account, %s", err.Error())
-	}
 
-	_, err = client.AccountService.Create(accountRequest)
-	if err != nil {
-		t.Errorf("create account returned with error %v", err.Error())
-	}
+	t.Run("When deleting existing account then success", func(t *testing.T) {
+		account, err := givenMinimalAccount(client)
+		if err != nil {
+			t.Errorf("error while generating minimal account, %s", err.Error())
+			t.FailNow()
+		}
 
-	err = client.AccountService.Delete(accountRequest.ID, 0)
-	if err != nil {
-		t.Errorf(err.Error())
-	}
+		err = client.AccountService.Delete(account.ID, 0)
+		if err != nil {
+			t.Errorf("error while deleting account %s", err.Error())
+			t.FailNow()
+		}
 
-	ac, err := client.AccountService.Fetch(accountRequest.ID)
-	if err == nil {
-		t.Errorf("%#v", ac)
-	}
+		ac, err := client.AccountService.Fetch(account.ID)
+		if err == nil {
+			t.Errorf("expecting error while fetching account")
+			t.FailNow()
+		}
 
-	equals := assertions{
-		{
-			actual:   err.Error(),
-			expected: fmt.Sprintf("record %s does not exist", accountRequest.ID),
-			name:     "DeleteAccount.NotExistingAccountErrorMessage",
-		},
-	}
-	thenEquals(t, equals)
+		equals := assertions{
+			{
+				actual:   err.Error(),
+				expected: fmt.Sprintf("record %s does not exist", account.ID),
+				name:     "NotExistingAccountErrorMessage",
+			},
+			{
+				actual:   ac,
+				expected: Account{},
+				name:     "Account should be empty",
+			},
+		}
+		thenEquals(t, equals)
+	})
 }
 
 func TestAccountService_List(t *testing.T) {
@@ -204,20 +215,18 @@ func whenListingAccountsWith(t *testing.T, client *Client, opts ListOptions) ([]
 	list, hasNext, err := client.AccountService.List(opts)
 	if err != nil {
 		t.Errorf("error while listing accounts, %s", err.Error())
+		t.FailNow()
 	}
 
 	return list, hasNext
 }
+
 func givenAccounts(t *testing.T, client *Client, numberOfAccounts int) {
 	for idx := 0; idx < numberOfAccounts; idx++ {
-		req, err := generateMinimalAccount()
+		_, err := givenMinimalAccount(client)
 		if err != nil {
 			t.Errorf("error while generating minimal account, %s", err.Error())
-		}
-
-		_, err = client.AccountService.Create(req)
-		if err != nil {
-			t.Errorf("error while generating minimal account, %s", err.Error())
+			t.FailNow()
 		}
 	}
 }
@@ -232,18 +241,30 @@ func clean(t *testing.T, client *Client) {
 		list, hasNext, err = client.AccountService.List(ListOptions{})
 		if err != nil {
 			t.Errorf("error while listing accounts, %s", err.Error())
+			t.FailNow()
 		}
 
 		for _, acc := range list {
 			if err := client.AccountService.Delete(acc.ID, acc.Version); err != nil {
 				t.Errorf("error while deleting account, %s", err.Error())
+				t.FailNow()
 			}
 		}
 	}
 }
 
-func generateMinimalAccount() (AccountRequest, error) {
-	return generateAccountWithAttributes(AccountAttributes{Country: "GB"})
+func givenMinimalAccount(client *Client) (Account, error) {
+	req, err := generateAccountWithAttributes(AccountAttributes{Country: "GB"})
+	if err != nil {
+		return Account{}, err
+	}
+
+	account, err := client.AccountService.Create(req)
+	if err != nil {
+		return Account{}, err
+	}
+
+	return account, nil
 }
 
 func generateAccountWithAttributes(attrs AccountAttributes) (AccountRequest, error) {
