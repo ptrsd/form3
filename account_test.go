@@ -23,7 +23,7 @@ func TestMain(m *testing.M) {
 func TestAccountService_Create(t *testing.T) {
 	client := NewClient(nil, baseURL)
 	t.Run("When creating accounts with valid data then return new account", func(t *testing.T) {
-		accountRequest, err := generateAccountWithAttributes(AccountAttributes{Country:"GB"})
+		accountRequest, err := generateAccountWithAttributes(AccountAttributes{Country: "GB"})
 		if err != nil {
 			t.Errorf("error while generating minimal account, %s", err.Error())
 			t.FailNow()
@@ -51,7 +51,7 @@ func TestAccountService_Create(t *testing.T) {
 	})
 
 	t.Run("When creating duplicates then error", func(t *testing.T) {
-		accountRequest, err := generateAccountWithAttributes(AccountAttributes{Country:"GB"})
+		accountRequest, err := generateAccountWithAttributes(AccountAttributes{Country: "GB"})
 		if err != nil {
 			t.Errorf("error while generating minimal account, %s", err.Error())
 			t.FailNow()
@@ -74,13 +74,26 @@ func TestAccountService_Create(t *testing.T) {
 		}
 		thenEquals(t, equals)
 	})
+	t.Run("When creating account with missing mandatory values then error", func(t *testing.T) {
+		request := AccountRequest{}
+		_, err := client.AccountService.Create(request)
+		if err == nil {
+			t.Errorf("create account should return with error")
+			t.FailNow()
+		}
+
+		equals := assertions{
+			{actual: err.Error(), expected: "validation failure list:, validation failure list:, validation failure list:, country in body is required, id in body is required, organisation_id in body is required", name: "ValidationError"},
+		}
+		thenEquals(t, equals)
+	})
 }
 
 func TestAccountService_Fetch(t *testing.T) {
 	client := NewClient(nil, baseURL)
 
 	t.Run("When fetching existing account then return requested account", func(t *testing.T) {
-		accountRequest, err := generateAccountWithAttributes(AccountAttributes{Country:"GB"})
+		accountRequest, err := generateAccountWithAttributes(AccountAttributes{Country: "GB"})
 		if err != nil {
 			t.Errorf("error while generating minimal account, %s", err.Error())
 			t.FailNow()
