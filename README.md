@@ -113,6 +113,7 @@ page no. 2
 Makefile consist of following stages:
 
 * docs - generates pdf from this file. The output file can be found in ```./build/output/README.pdf```.
-* tests - runs tests against test environment set up by docker-compose
+* lint - runs golangci-lint against the code.
+* test - runs tests against test environment set up by docker-compose.
 
 You can also run tests by using ```docker-compose up``` in the root directory of the project.
