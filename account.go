@@ -11,7 +11,7 @@ const (
 	organisationAccountsBasePath = "/v1/organisation/accounts"
 )
 
-type AccountRoot struct {
+type accountRoot struct {
 	Data Account `json:"data,omitempty"`
 }
 
@@ -49,11 +49,11 @@ type AccountAttributes struct {
 	Title                   string `json:"title,omitempty"`
 }
 
-type AccountRequestRoot struct {
+type accountRequestRoot struct {
 	Data AccountRequest `json:"data,omitempty"`
 }
 
-type AccountListRoot struct {
+type accountListRoot struct {
 	Data  []Account `json:"data,omitempty"`
 	Links struct {
 		Next     string `json:"next,omitempty"`
@@ -81,12 +81,12 @@ type AccountService struct {
 // Create a new organization account. It takes AccountRequest as an argument and returns Account or an error for network
 // problem, and for non-2xx server statuses.
 func (a *AccountService) Create(createReq AccountRequest) (Account, error) {
-	req, err := a.client.newRequest(http.MethodPost, &url.URL{Path: organisationAccountsBasePath}, AccountRequestRoot{createReq})
+	req, err := a.client.newRequest(http.MethodPost, &url.URL{Path: organisationAccountsBasePath}, accountRequestRoot{createReq})
 	if err != nil {
 		return Account{}, err
 	}
 
-	result := AccountRoot{}
+	result := accountRoot{}
 	err = a.client.do(req, &result)
 
 	return result.Data, err
@@ -100,7 +100,7 @@ func (a *AccountService) Fetch(id string) (Account, error) {
 		return Account{}, err
 	}
 
-	result := AccountRoot{}
+	result := accountRoot{}
 	err = a.client.do(req, &result)
 
 	return result.Data, err
@@ -134,7 +134,7 @@ func (a *AccountService) List(options ListOptions) ([]Account, bool, error) {
 		return nil, false, err
 	}
 
-	result := AccountListRoot{}
+	result := accountListRoot{}
 	err = a.client.do(req, &result)
 
 	return result.Data, result.Links.Next != "", err
