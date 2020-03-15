@@ -9,6 +9,7 @@ import (
 
 const (
 	organisationAccountsBasePath = "/v1/organisation/accounts"
+	typ                          = "accounts"
 )
 
 type accountRoot struct {
@@ -81,6 +82,10 @@ type AccountService struct {
 // Create a new organization account. It takes AccountRequest as an argument and returns Account or an error for network
 // problem, and for non-2xx server statuses.
 func (a *AccountService) Create(createReq AccountRequest) (Account, error) {
+	if createReq.Type == "" {
+		createReq.Type = typ
+	}
+
 	req, err := a.client.newRequest(http.MethodPost, &url.URL{Path: organisationAccountsBasePath}, accountRequestRoot{createReq})
 	if err != nil {
 		return Account{}, err
