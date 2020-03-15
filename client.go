@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 )
 
 const (
@@ -115,6 +116,10 @@ func checkError(resp *http.Response) error {
 		if errMsg.ErrorMessage == "" {
 			return fmt.Errorf(resp.Status)
 		}
+
+		newLineRegex := regexp.MustCompile("\\n")
+		errMsg.ErrorMessage = newLineRegex.ReplaceAllString(errMsg.ErrorMessage, ", ")
+
 		return fmt.Errorf(errMsg.ErrorMessage)
 	default:
 		return fmt.Errorf("unknown status code %d", resp.StatusCode)
