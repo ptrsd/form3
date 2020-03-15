@@ -1,7 +1,7 @@
-build-docker:
-	@docker build -t form3-client:interview .
+.PHONY: docs
+
+docs:
+	@docker run -v ${PWD}/:/docs pandoc/latex -f markdown /docs/README.md -o /docs/build/output/README.pdf
 
 test:
-	@docker run -v ${PWD}:/app form3-client:interview
-
-all: build-docker test
+	@docker-compose up
