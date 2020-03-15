@@ -17,9 +17,11 @@ const (
 	defaultPageSize = "100"
 )
 
+// Client provides interface for accessing Form3 server.
 type Client struct {
 	httpClient *http.Client
 
+	// BaseURL is a base url for Form3 server. Default value: http://localhost:8080
 	BaseURL        *url.URL
 	UserAgent      string
 	AccountService *AccountService
@@ -29,15 +31,19 @@ type ErrorMessage struct {
 	ErrorMessage string `json:"error_message"`
 }
 
+//ListOptions defines page number and size of a page for a list operation.
 type ListOptions struct {
 	Page     int
 	PageSize int
 }
 
+// NewDefaultClient creates a new instance of Form3 client. If httpClient is not provided then client will use http.DefaultClient.
 func NewDefaultClient(httpClient *http.Client) (client *Client) {
 	return NewClient(httpClient, defaultBaseURL)
 }
 
+// NewClient creates a new instance of Form3 client. If httpClient is not provided then client will use http.DefaultClient.
+// BaseURL must be the valid URL value. If validation of BaseURL fails then client will return an error.
 func NewClient(httpClient *http.Client, baseURL string) (client *Client) {
 	if httpClient == nil {
 		httpClient = http.DefaultClient

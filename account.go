@@ -15,8 +15,12 @@ type AccountRoot struct {
 	Data Account `json:"data,omitempty"`
 }
 
+// Account describes a registered bank account.
 type Account struct {
-	ID             string            `json:"id,omitempty"`
+	// ID is a mandatory, UUID version 4 field. It identifies bank account within a system.
+	ID string `json:"id,omitempty"`
+	// OrganisationID is a mandatory UUID version 4 field. It identifies organisation by which the bank account has been
+	// created.
 	OrganisationID string            `json:"organisation_id,omitempty"`
 	CreatedOn      string            `json:"created_on,omitempty"`
 	ModifiedOn     string            `json:"modified_on,omitempty"`
@@ -25,6 +29,7 @@ type Account struct {
 	Attributes     AccountAttributes `json:"attributes,omitempty"`
 }
 
+// AccountAttributes describes attributes typical to
 type AccountAttributes struct {
 	AccountMatchingOptOut       bool     `json:"account_matching_opt_out,omitempty"`
 	JointAccount                bool     `json:"joint_account,omitempty"`
@@ -36,11 +41,12 @@ type AccountAttributes struct {
 	BankIDCode                  string   `json:"bank_id_code,omitempty"`
 	BaseCurrency                string   `json:"base_currency,omitempty"`
 	Bic                         string   `json:"bic,omitempty"`
-	Country                     string   `json:"country,omitempty"`
-	FirstName                   string   `json:"first_name,omitempty"`
-	Iban                        string   `json:"iban,omitempty"`
-	SecondaryIdentification     string   `json:"secondary_identification,omitempty"`
-	Title                       string   `json:"title,omitempty"`
+	// Country is a mandatory, ISO 3166-1 code country code.
+	Country                 string `json:"country,omitempty"`
+	FirstName               string `json:"first_name,omitempty"`
+	Iban                    string `json:"iban,omitempty"`
+	SecondaryIdentification string `json:"secondary_identification,omitempty"`
+	Title                   string `json:"title,omitempty"`
 }
 
 type AccountRequestRoot struct {
@@ -59,7 +65,10 @@ type AccountListRoot struct {
 }
 
 type AccountRequest struct {
-	ID             string            `json:"id"`
+	// ID is a mandatory, UUID version 4 field. It identifies bank account within a system.
+	ID string `json:"id,omitempty"`
+	// OrganisationID is a mandatory UUID version 4 field. It identifies organisation by which the bank account has been
+	// created.
 	OrganisationID string            `json:"organisation_id"`
 	Type           string            `json:"type,omitempty"`
 	Attributes     AccountAttributes `json:"attributes"`
@@ -69,6 +78,8 @@ type AccountService struct {
 	client *Client
 }
 
+// Create a new organization account. It takes AccountRequest as an argument and returns Account or an error for network
+// problem, and for non-2xx server statuses.
 func (a *AccountService) Create(createReq AccountRequest) (Account, error) {
 	req, err := a.client.newRequest(http.MethodPost, &url.URL{Path: organisationAccountsBasePath}, AccountRequestRoot{createReq})
 	if err != nil {
@@ -81,6 +92,7 @@ func (a *AccountService) Create(createReq AccountRequest) (Account, error) {
 	return result.Data, err
 }
 
+// Fetch an Account based on ID. Returns an account or an error for network problem, and for non-2xx server statuses.
 func (a *AccountService) Fetch(id string) (Account, error) {
 	fetchAccountPath := fmt.Sprintf("%s/%s", organisationAccountsBasePath, id)
 	req, err := a.client.newRequest(http.MethodGet, &url.URL{Path: fetchAccountPath}, nil)
@@ -94,6 +106,7 @@ func (a *AccountService) Fetch(id string) (Account, error) {
 	return result.Data, err
 }
 
+// Delete an account. Returns error for network problem, and for non-2xx server statuses.
 func (a *AccountService) Delete(id string, version int) error {
 	deleteAccountPath := fmt.Sprintf("%s/%s", organisationAccountsBasePath, id)
 
@@ -111,6 +124,8 @@ func (a *AccountService) Delete(id string, version int) error {
 	return err
 }
 
+// List accounts. Accepts pagination options as an argument. Returns list of accounts, true if there are more pages with
+// accounts or an error for network problem, and for non-2xx server statuses.
 func (a *AccountService) List(options ListOptions) ([]Account, bool, error) {
 	listQuery := a.getPagingQueryParams(options)
 
