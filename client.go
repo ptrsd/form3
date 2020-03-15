@@ -117,7 +117,7 @@ func checkError(resp *http.Response) error {
 			return fmt.Errorf(resp.Status)
 		}
 
-		newLineRegex := regexp.MustCompile("\\n")
+		newLineRegex := regexp.MustCompile(`\n`)
 		errMsg.ErrorMessage = newLineRegex.ReplaceAllString(errMsg.ErrorMessage, ", ")
 
 		return fmt.Errorf(errMsg.ErrorMessage)
